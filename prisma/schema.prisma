@@ -1,0 +1,123 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// Neighborhoods around UT Austin
+model Neighborhood {
+  id          String      @id @default(cuid())
+  name        String      @unique
+  slug        String      @unique
+  description String?
+  apartments  Apartment[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+// Main apartment/property listing
+model Apartment {
+  id              String       @id @default(cuid())
+  name            String
+  slug            String       @unique
+  address         String
+  city            String       @default("Austin")
+  state           String       @default("TX")
+  zipCode         String
+  latitude        Float
+  longitude       Float
+  neighborhoodId  String
+  neighborhood    Neighborhood @relation(fields: [neighborhoodId], references: [id])
+  
+  // Contact info
+  phone           String?
+  email           String?
+  website         String?
+  
+  // Walk time to campus in minutes
+  walkTime        Int?
+  bikeTime        Int?
+  busTime         Int?
+  
+  // Property details
+  yearBuilt       Int?
+  totalUnits      Int?
+  petFriendly     Boolean      @default(false)
+  parkingType     String?      // "Garage", "Surface Lot", "Street", "None"
+  
+  description     String?
+  imageUrl        String?
+  
+  // Relations
+  floorPlans      FloorPlan[]
+  amenities       ApartmentAmenity[]
+  images          ApartmentImage[]
+  
+  featured        Boolean      @default(false)
+  available       Boolean      @default(true)
+  
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+}
+
+// Floor plans for each apartment
+model FloorPlan {
+  id            String    @id @default(cuid())
+  apartmentId   String
+  apartment     Apartment @relation(fields: [apartmentId], references: [id], onDelete: Cascade)
+  
+  name          String    // "Studio A", "1BR Classic", etc.
+  bedrooms      Int
+  bathrooms     Float
+  sqft          Int?
+  
+  // Pricing
+  priceMin      Int       // Monthly rent minimum
+  priceMax      Int?      // Monthly rent maximum (null if fixed price)
+  pricePerPerson Boolean  @default(false) // True if price is per person
+  
+  availableDate DateTime?
+  availableNow  Boolean   @default(false)
+  
+  imageUrl      String?
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+// Amenities master list
+model Amenity {
+  id         String             @id @default(cuid())
+  name       String             @unique
+  category   String             // "Building", "Unit", "Community", "Utilities"
+  icon       String?            // Icon name from Lucide
+  apartments ApartmentAmenity[]
+}
+
+// Junction table for apartment amenities
+model ApartmentAmenity {
+  id          String    @id @default(cuid())
+  apartmentId String
+  apartment   Apartment @relation(fields: [apartmentId], references: [id], onDelete: Cascade)
+  amenityId   String
+  amenity     Amenity   @relation(fields: [amenityId], references: [id], onDelete: Cascade)
+  
+  @@unique([apartmentId, amenityId])
+}
+
+// Apartment images
+model ApartmentImage {
+  id          String    @id @default(cuid())
+  apartmentId String
+  apartment   Apartment @relation(fields: [apartmentId], references: [id], onDelete: Cascade)
+  url         String
+  caption     String?
+  isPrimary   Boolean   @default(false)
+  order       Int       @default(0)
+  createdAt   DateTime  @default(now())
+}
