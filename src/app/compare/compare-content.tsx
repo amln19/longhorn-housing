@@ -157,7 +157,7 @@ export default function CompareContent() {
       label: "Pet Friendly",
       icon: PawPrint,
       getValue: (apt: CompareApartment) => (apt.petFriendly ? "Yes" : "No"),
-      highlight: (apt: CompareApartment) => apt.petFriendly,
+      highlight: (apt: CompareApartment) => (apt.petFriendly ? "green" : "red"),
     },
     {
       label: "Year Built",
@@ -221,9 +221,11 @@ export default function CompareContent() {
                         <td key={apt.id} className="p-4 text-center">
                           <span
                             className={
-                              row.highlight?.(apt)
+                              row.highlight?.(apt) === "green"
                                 ? "text-green-600 font-medium"
-                                : ""
+                                : row.highlight?.(apt) === "red"
+                                  ? "text-red-500 font-medium"
+                                  : ""
                             }
                           >
                             {row.getValue(apt)}

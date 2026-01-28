@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Menu, X, Home, Search, GitCompare, MapPin } from "lucide-react";
@@ -29,18 +30,13 @@ export function Header() {
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="relative h-10 w-10 rounded-xl bg-linear-to-br from-[#bf5700] to-[#ffa060] overflow-hidden">
-              <span
-                className="text-2xl absolute top-px left-[px] z-0 scale-105 opacity-95"
-              >
-                🤘
-              </span>
-              <span
-                className="text-2xl absolute bottom-px right-0.5 z-10 scale-95 opacity-95"
-              >
-                🏠
-              </span>
-            </div>
+            <Image
+              src="/lh-logo.png"
+              alt="Logo"
+              width={150}
+              height={40}
+              className="h-12 w-auto"
+            />
             <span className="text-xl font-bold text-gray-900">
               Longhorn<span className="text-burnt-orange">Housing</span>
             </span>

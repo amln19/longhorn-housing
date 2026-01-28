@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 
 export function Footer() {
   const scrollToTop = () => {
@@ -16,21 +17,16 @@ export function Footer() {
             <Link
               href="/"
               onClick={scrollToTop}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2.5 group"
             >
-              <div className="relative h-10 w-10 rounded-lg bg-linear-to-br from-[#bf5700] to-[#ffa060] overflow-hidden">
-                <span
-                  className="text-2xl absolute top-px left-[px] z-0 scale-105 opacity-95"
-                >
-                  🤘
-                </span>
-                <span
-                  className="text-2xl absolute bottom-px right-0.5 z-10 scale-95 opacity-95"
-                >
-                  🏠
-                </span>
-              </div>
-              <span className="text-xl font-bold text-gray-900">
+              <Image
+                src="/lh-logo.png"
+                alt="Logo"
+                width={150}
+                height={40}
+                className="h-22 w-auto"
+              />
+              <span className="text-3xl font-bold text-gray-900">
                 Longhorn<span className="text-burnt-orange">Housing</span>
               </span>
             </Link>

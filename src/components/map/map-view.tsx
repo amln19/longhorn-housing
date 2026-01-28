@@ -121,7 +121,7 @@ export function MapView({
       const el = document.createElement("div");
       el.className = "apartment-marker";
       el.innerHTML = `
-        <div style="
+        <div class="marker-pill" style="
           background: white;
           padding: 6px 12px;
           border-radius: 20px;
@@ -136,11 +136,53 @@ export function MapView({
           max-width: 180px;
           overflow: hidden;
           text-overflow: ellipsis;
-        " onmouseover="this.style.borderColor='#BF5700';this.style.transform='scale(1.05)'" 
-           onmouseout="this.style.borderColor='#e5e7eb';this.style.transform='scale(1)'">
+        ">
           ${label}
         </div>
       `;
+
+      const markerPill = el.querySelector(".marker-pill") as HTMLElement;
+
+      // Create popup for hover
+      const popup = new mapboxgl.Popup({
+        offset: 25,
+        closeButton: false,
+        closeOnClick: false,
+      }).setHTML(`
+        <div style="padding: 8px;">
+          <strong style="font-size: 14px;">${apt.name}</strong>
+          <p style="margin: 4px 0 0; font-size: 12px; color: #BF5700; font-weight: 600;">
+            Starting at $${apt.priceMin.toLocaleString()}/mo
+          </p>
+        </div>
+      `);
+
+      // Hover delay logic
+      let hoverTimeout: ReturnType<typeof setTimeout> | null = null;
+
+      el.addEventListener("mouseenter", () => {
+        if (markerPill) {
+          markerPill.style.borderColor = "#BF5700";
+          markerPill.style.transform = "scale(1.05)";
+        }
+
+        hoverTimeout = setTimeout(() => {
+          popup.addTo(map.current!);
+        }, 200);
+      });
+
+      el.addEventListener("mouseleave", () => {
+        if (markerPill) {
+          markerPill.style.borderColor = "#e5e7eb";
+          markerPill.style.transform = "scale(1)";
+        }
+
+        if (hoverTimeout) {
+          clearTimeout(hoverTimeout);
+          hoverTimeout = null;
+        }
+        popup.remove();
+      });
 
       el.addEventListener("click", () => {
         if (onMarkerClick) {
@@ -150,16 +192,7 @@ export function MapView({
 
       const marker = new mapboxgl.Marker({ element: el })
         .setLngLat([apt.longitude, apt.latitude])
-        .setPopup(
-          new mapboxgl.Popup({ offset: 25 }).setHTML(`
-            <div style="padding: 8px;">
-              <strong style="font-size: 14px;">${apt.name}</strong>
-              <p style="margin: 4px 0 0; font-size: 12px; color: #666;">
-                Starting at $${apt.priceMin.toLocaleString()}/mo
-              </p>
-            </div>
-          `),
-        )
+        .setPopup(popup)
         .addTo(map.current!);
 
       markersRef.current.push(marker);
