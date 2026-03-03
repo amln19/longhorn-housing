@@ -1,187 +1,152 @@
-# LonghornHousing 🤘
+# Longhorn Housing
 
-A modern apartment finder app for UT Austin students. Search, compare, and find off-campus housing near The University of Texas at Austin.
-
-![Next.js](https://img.shields.io/badge/Next.js-16-black)
-![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)
-![Tailwind CSS](https://img.shields.io/badge/Tailwind-4-38bdf8)
-![Prisma](https://img.shields.io/badge/Prisma-7-2D3748)
+A modern apartment search platform built for University of Texas at Austin students looking for off-campus housing. Browse 100+ verified listings, filter by neighborhood, price, and amenities, compare apartments side-by-side, and explore an interactive Mapbox-powered map — all in a fast, responsive Next.js app themed in burnt orange. 🤘
 
 ## Features
 
-- 🔍 **Smart Search** - Filter by neighborhood, price, bedrooms, amenities
-- 📊 **Side-by-Side Compare** - Compare up to 4 apartments at once
-- 🗺️ **Interactive Map** - See all apartments with walk times to campus
-- 📱 **Mobile Responsive** - Works great on all devices
-- ⚡ **Fast** - Built with Next.js 16 App Router
-- 🏠 **Real Data** - 153 apartments scraped from UT Housing website
+- 🔍 **Smart Search & Filters** — filter by price range, bedroom count, neighborhood, pet-friendliness, amenities, and availability
+- 🗺️ **Interactive Map** — Mapbox GL map centered on UT Austin with clickable apartment markers and configurable label modes (name, price, or both)
+- ⚖️ **Side-by-Side Compare** — select up to 4 apartments and compare pricing, walk time, amenities, and more in a single table
+- 🏠 **Detailed Listings** — each apartment page shows floor plans, grouped amenities, image galleries, contact info, and commute times
+- 🤖 **Automated Data Pipeline** — Puppeteer-based scraper pulls live data from the UT off-campus housing portal, then seeds a PostgreSQL database via Prisma
+- 📱 **Fully Responsive** — mobile-first design with a collapsible nav, touch-friendly filters, and adaptive grid layouts
+- ⚡ **App Router + React 19** — leverages Next.js 16 App Router with server components, streaming Suspense boundaries, and dynamic metadata
 
 ## Tech Stack
 
-- **Framework**: Next.js 16 (App Router, Turbopack)
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS
-- **Database**: PostgreSQL
-- **ORM**: Prisma
-- **Maps**: Mapbox GL
-- **Icons**: Lucide React
+- **Framework:** Next.js 16 (App Router)
+- **Language:** TypeScript
+- **UI:** React 19, Tailwind CSS 4, Lucide React icons
+- **Styling utilities:** clsx, tailwind-merge, class-variance-authority
+- **Database:** PostgreSQL via Prisma ORM (with `@prisma/adapter-pg` driver adapter)
+- **Maps:** Mapbox GL JS
+- **Scraping:** Puppeteer (headless Chrome)
+- **Runtime scripts:** tsx
+- **Linting:** ESLint with eslint-config-next
+- **Fonts:** Geist Sans & Geist Mono (via `next/font`)
 
 ## Getting Started
 
 ### Prerequisites
 
-- Node.js 18+
-- PostgreSQL database (local or Supabase)
-- npm or yarn
+- **Node.js** 20+
+- **npm** (or another package manager)
+- **PostgreSQL** database (local or hosted — e.g. Neon, Supabase, Railway)
+- **Mapbox** account for an access token (free tier works)
 
 ### Installation
 
-1. **Clone the repository**
+```bash
+# Clone the repo
+git clone https://github.com/amln19/longhorn-housing.git
+cd longhorn-housing
 
-   ```bash
-   git clone https://github.com/amln19/longhorn-housing.git
-   cd longhorn-housing
-   ```
+# Install dependencies
+npm install
+```
 
-2. **Install dependencies**
+### Environment Setup
 
-   ```bash
-   npm install
-   ```
+Create a `.env` file in the project root:
 
-3. **Set up environment variables**
+```bash
+DATABASE_URL="postgresql://user:password@localhost:5432/longhorn_housing"
+NEXT_PUBLIC_MAPBOX_TOKEN="pk.your_mapbox_token_here"
+```
 
-   ```bash
-   cp .env.example .env
-   ```
+### Database Setup
 
-   Edit `.env` with your database URL:
+```bash
+# Generate the Prisma client
+npm run db:generate
 
-   ```
-   DATABASE_URL="postgresql://postgres:postgres@localhost:5432/longhorn_housing"  # Local PostgreSQL database URL
-   # OR
-   DATABASE_URL="postgresql://postgres:[YOUR-PASSWORD]@db.[YOUR-PROJECT-REF].supabase.co:5432/postgres"  # Supabase
+# Push the schema to your database
+npm run db:push
 
-   NEXT_PUBLIC_MAPBOX_TOKEN="your-mapbox-token"  # Optional, for maps functionality
-   ```
+# Seed the database with scraped apartment data
+npm run db:seed
+```
 
-4. **Set up the database**
+### Run the App
 
-   ```bash
-   # Generate Prisma client
-   npm run db:generate
+```bash
+# Development server (http://localhost:3000)
+npm run dev
 
-   # Push schema to database
-   npm run db:push
+# Production build
+npm run build && npm start
+```
 
-   # Seed with sample data
-   npm run db:seed
-   ```
+## Environment Variables
 
-5. **Start the development server**
+| Variable                   | Description                                              | Required |
+| -------------------------- | -------------------------------------------------------- | -------- |
+| `DATABASE_URL`             | PostgreSQL connection string used by Prisma              | Yes      |
+| `NEXT_PUBLIC_MAPBOX_TOKEN` | Mapbox GL JS public access token for the interactive map | Yes      |
 
-   ```bash
-   npm run dev
-   ```
+## Scraping Workflow
 
-6. Open [http://localhost:3000](http://localhost:3000)
+The project includes a Puppeteer scraper that pulls apartment data directly from the [UT Off-Campus Housing portal](https://housing.offcampus.utexas.edu/listing).
 
-### Using Supabase (Recommended for deployment)
+```bash
+# Run the scraper (outputs scripts/scraped-apartments.json)
+npm run scrape
 
-1. Create a free account at [supabase.com](https://supabase.com)
-2. Create a new project
-3. Get your connection string from Settings > Database
-4. Update your `.env` file with the Supabase URL
+# Seed the database from the scraped JSON
+npm run db:seed
+```
+
+**How it works:**
+
+1. `scrape-listings.ts` launches headless Chrome, navigates to the UT housing page, and extracts the `window.listingData` JavaScript variable containing all listings.
+2. Each raw listing is transformed — addresses are parsed, neighborhoods are inferred from coordinates, amenities are mapped, and floor plans are normalized.
+3. The result is written to `scripts/scraped-apartments.json`.
+4. `seed-from-scrape.ts` reads that JSON, clears the database, and inserts neighborhoods, amenities, apartments, floor plans, and images via Prisma.
+
+> **Note:** A pre-scraped `scraped-apartments.json` is included in the repo so you can seed the database without running the scraper.
 
 ## Project Structure
 
 ```
-src/
-├── app/                     # Next.js App Router pages
-│   ├── api/                 # API routes
-│   ├── apartments/          # Apartment listing & detail pages
-│   ├── compare/             # Comparison page
-│   └── map/                 # Map view page
-├── components/              # React components
-│   ├── apartments/          # Apartment-specific components
-│   ├── layout/              # Header, Footer
-│   ├── map/                 # Map components
-│   └── ui/                  # Reusable UI components
-├── lib/                     # Utilities
-│   ├── db.ts                # Prisma client
-│   └── utils.ts             # Helper functions
-└── types/                   # TypeScript types
-
-prisma/
-├── schema.prisma            # Database schema
-└── seed-from-scrape.ts      # Seed data from scraper
-
-scripts/
-├── scrape-listings.ts       # UT Housing website scraper
-└── scraped-apartments.json  # Scraped data (153 apartments)
+├── prisma/
+│   ├── schema.prisma          # Database schema (Apartment, FloorPlan, Amenity, etc.)
+│   └── seed-from-scrape.ts    # Seed script that reads scraped JSON → DB
+├── scripts/
+│   ├── scrape-listings.ts     # Puppeteer scraper for UT housing portal
+│   └── scraped-apartments.json
+├── src/
+│   ├── app/
+│   │   ├── page.tsx           # Landing page with hero, features, and neighborhoods
+│   │   ├── apartments/        # Browse & detail pages
+│   │   ├── compare/           # Side-by-side comparison page
+│   │   ├── map/               # Full-screen Mapbox map page
+│   │   └── api/               # REST API routes (apartments, neighborhoods, amenities)
+│   ├── components/
+│   │   ├── apartments/        # ApartmentCard, SearchFilters
+│   │   ├── layout/            # Header, Footer
+│   │   ├── map/               # MapView (Mapbox GL wrapper)
+│   │   └── ui/                # Reusable primitives (Button, Card, Badge, etc.)
+│   ├── lib/
+│   │   ├── db.ts              # Prisma client singleton
+│   │   └── utils.ts           # cn(), formatPrice(), slugify()
+│   └── types/
+│       └── index.ts           # Shared TypeScript types
 ```
 
 ## Available Scripts
 
-| Command               | Description                        |
-| --------------------- | ---------------------------------- |
-| `npm run dev`         | Start development server           |
-| `npm run build`       | Build for production               |
-| `npm run start`       | Start production server            |
-| `npm run db:generate` | Generate Prisma client             |
-| `npm run db:push`     | Push schema to database            |
-| `npm run db:seed`     | Seed database with scraped data    |
-| `npm run db:studio`   | Open Prisma Studio (database GUI)  |
-| `npm run scrape`      | Scrape UT Housing website for data |
-
-## Environment Variables
-
-| Variable                   | Description                  | Required |
-| -------------------------- | ---------------------------- | -------- |
-| `DATABASE_URL`             | PostgreSQL connection string | Yes      |
-| `NEXT_PUBLIC_MAPBOX_TOKEN` | Mapbox API token for maps    | No       |
-
-## Scraping Fresh Data
-
-The project includes a scraper to fetch the latest apartment listings from the UT Housing website.
-
-```bash
-# Run the scraper (uses Puppeteer)
-npm run scrape
-
-# This outputs to scripts/scraped-apartments.json
-# Then seed the database with the new data
-npm run db:seed
-```
-
-The scraper extracts:
-
-- Apartment names, addresses, and coordinates
-- Pricing and floor plan details
-- Amenities and features
-- Contact information and websites
-- Walk times to campus
-
-> **Note**: The scraped data file (`scripts/scraped-apartments.json`) is gitignored. Run the scraper to generate fresh data.
-
-## Roadmap
-
-- [ ] User authentication
-- [ ] Save favorite apartments
-- [ ] User reviews and ratings
-- [ ] Price history charts
-- [ ] Email notifications for new listings
-- [ ] Roommate finder
-- [ ] Virtual tours integration
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
+| Script          | Command               | Description                         |
+| --------------- | --------------------- | ----------------------------------- |
+| Dev server      | `npm run dev`         | Start Next.js in development mode   |
+| Build           | `npm run build`       | Create a production build           |
+| Start           | `npm start`           | Serve the production build          |
+| Lint            | `npm run lint`        | Run ESLint                          |
+| Generate Prisma | `npm run db:generate` | Regenerate the Prisma client        |
+| Push schema     | `npm run db:push`     | Push schema changes to the database |
+| Seed database   | `npm run db:seed`     | Seed the database from scraped data |
+| Prisma Studio   | `npm run db:studio`   | Open the Prisma Studio GUI          |
+| Scrape listings | `npm run scrape`      | Run the Puppeteer scraper           |
 
 ## License
 
-MIT License - feel free to use this project for your own purposes.
-
----
-
-Made with 🧡 for UT Austin students
+This project is licensed under the [MIT License](LICENSE).
