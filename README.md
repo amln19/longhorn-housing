@@ -108,6 +108,7 @@ npm run db:seed
 ## Project Structure
 
 ```
+longhorn-housing/
 ├── prisma/
 │   ├── schema.prisma          # Database schema (Apartment, FloorPlan, Amenity, etc.)
 │   └── seed-from-scrape.ts    # Seed script that reads scraped JSON → DB
