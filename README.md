@@ -1,6 +1,6 @@
-# Longhorn Housing
+# Longhorn Housing 🤘
 
-A modern apartment search platform built for University of Texas at Austin students looking for off-campus housing. Browse 100+ verified listings, filter by neighborhood, price, and amenities, compare apartments side-by-side, and explore an interactive Mapbox-powered map — all in a fast, responsive Next.js app themed in burnt orange. 🤘
+A modern apartment search platform built for University of Texas at Austin students looking for off-campus housing. Browse 150+ verified listings, filter by neighborhood, price, and amenities, compare apartments side-by-side, and explore an interactive Mapbox-powered map — all in a fast, responsive Next.js app themed in burnt orange.
 
 ## Features
 
@@ -149,4 +149,4 @@ npm run db:seed
 
 ## License
 
-This project is licensed under the [MIT License](LICENSE).
+MIT
