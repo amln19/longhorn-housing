@@ -1,6 +1,6 @@
 # Longhorn Housing 🤘
 
-A modern apartment search platform built for University of Texas at Austin students looking for off-campus housing. Browse 150+ verified listings, filter by neighborhood, price, and amenities, compare apartments side-by-side, and explore an interactive Mapbox-powered map — all in a fast, responsive Next.js app themed in burnt orange.
+A modern apartment search platform built for UT Austin students searching for off-campus housing. Browse 150+ verified listings; filter by neighborhood, price, and amenities; compare apartments side-by-side; and explore an interactive Mapbox-powered map — all in a fast, responsive Next.js web app themed in UT's signature burnt orange.
 
 ## Features
 
@@ -10,20 +10,15 @@ A modern apartment search platform built for University of Texas at Austin stude
 - 🏠 **Detailed Listings** — each apartment page shows floor plans, grouped amenities, image galleries, contact info, and commute times
 - 🤖 **Automated Data Pipeline** — Puppeteer-based scraper pulls live data from the UT off-campus housing portal, then seeds a PostgreSQL database via Prisma
 - 📱 **Fully Responsive** — mobile-first design with a collapsible nav, touch-friendly filters, and adaptive grid layouts
-- ⚡ **App Router + React 19** — leverages Next.js 16 App Router with server components, streaming Suspense boundaries, and dynamic metadata
 
 ## Tech Stack
 
-- **Framework:** Next.js 16 (App Router)
+- **Framework:** Next.js
 - **Language:** TypeScript
-- **UI:** React 19, Tailwind CSS 4, Lucide React icons
-- **Styling utilities:** clsx, tailwind-merge, class-variance-authority
-- **Database:** PostgreSQL via Prisma ORM (with `@prisma/adapter-pg` driver adapter)
+- **UI:** React, TailwindCSS, Lucide React icons
+- **Database:** PostgreSQL via Prisma ORM
 - **Maps:** Mapbox GL JS
-- **Scraping:** Puppeteer (headless Chrome)
-- **Runtime scripts:** tsx
-- **Linting:** ESLint with eslint-config-next
-- **Fonts:** Geist Sans & Geist Mono (via `next/font`)
+- **Scraping:** Puppeteer
 
 ## Getting Started
 
@@ -141,7 +136,6 @@ longhorn-housing/
 | Dev server      | `npm run dev`         | Start Next.js in development mode   |
 | Build           | `npm run build`       | Create a production build           |
 | Start           | `npm start`           | Serve the production build          |
-| Lint            | `npm run lint`        | Run ESLint                          |
 | Generate Prisma | `npm run db:generate` | Regenerate the Prisma client        |
 | Push schema     | `npm run db:push`     | Push schema changes to the database |
 | Seed database   | `npm run db:seed`     | Seed the database from scraped data |
