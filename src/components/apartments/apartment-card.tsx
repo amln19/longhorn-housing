@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { MapPin, Clock, Bed, DollarSign, Star } from "lucide-react";
+import { MapPin, Clock, Bed, Star } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { FavoriteButton } from "@/components/apartments/favorite-button";
@@ -68,7 +68,7 @@ export function ApartmentCardComponent({
           <div className="absolute bottom-3 left-3">
             <Badge
               variant="secondary"
-              className="bg-white/95 dark:bg-surface/95 backdrop-blur-sm shadow-sm text-text-primary"
+              className="bg-white/95 dark:bg-surface/95 backdrop-blur-sm shadow-sm text-neutral-900 dark:text-neutral-100"
             >
               {apartment.neighborhood.name}
             </Badge>
@@ -109,7 +109,6 @@ export function ApartmentCardComponent({
 
           <div className="flex items-center justify-between mt-4 pt-4 border-t border-border-base">
             <div className="flex items-center gap-1">
-              <DollarSign className="h-5 w-5 text-burnt-orange" />
               <span className="text-xl font-bold text-burnt-orange">
                 {formatPriceRange(apartment.priceMin, apartment.priceMax)}
               </span>

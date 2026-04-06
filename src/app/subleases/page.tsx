@@ -13,7 +13,6 @@ import {
   Search,
   Plus,
   MapPin,
-  DollarSign,
   Bed,
   Bath,
   Calendar,
@@ -123,7 +122,7 @@ export default function SubleasesPage() {
         {/* Filters */}
         <div className="bg-surface rounded-xl border border-border-base p-4 mb-6">
           <div className="flex flex-wrap gap-3">
-            <div className="relative flex-1 min-w-[200px]">
+            <div className="relative flex-1 min-w-50">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted" />
               <Input
                 value={search}
@@ -220,7 +219,6 @@ function SubleaseCard({
           </div>
 
           <div className="flex items-center gap-1">
-            <DollarSign className="h-5 w-5 text-burnt-orange" />
             <span className="text-xl font-bold text-burnt-orange">
               ${sublease.monthlyRent.toLocaleString()}
             </span>
