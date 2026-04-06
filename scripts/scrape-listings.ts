@@ -1,160 +1,191 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * UT Austin Off-Campus Housing Scraper
- * Extracts listing data directly from the listingData JavaScript variable
+ * Extracts listing data directly from the listingData JavaScript variable.
+ *
+ * Resilience features:
+ *  - waitForFunction instead of arbitrary setTimeout
+ *  - Retry with exponential backoff on page load failures
+ *  - Runtime validation of every raw listing before transformation
+ *  - Diff report against previous scrape output
  */
 
 import "dotenv/config";
 import puppeteer from "puppeteer";
 import * as fs from "fs";
 import * as path from "path";
+import type { ScrapedApartment } from "../src/types/scraped";
 
-// Types for our transformed data
-interface ScrapedApartment {
+// ---------------------------------------------------------------------------
+// Raw listing shape from the page's listingData variable
+// ---------------------------------------------------------------------------
+interface RawListing {
   id: number;
-  name: string;
-  slug: string;
-  address: string;
-  city: string;
-  state: string;
-  zipCode: string;
-  latitude: number;
-  longitude: number;
-  priceMin: number | null;
-  priceMax: number | null;
-  pricePerPerson: boolean;
-  bedroomMin: number;
-  bedroomMax: number;
-  bathroomMin: number;
-  bathroomMax: number;
-  phone: string | null;
-  email: string | null;
-  website: string | null;
-  walkTime: number | null;
-  imageUrl: string | null;
-  images: string[];
-  neighborhood: string;
-  category: string;
-  description: string | null;
-  amenities: string[];
-  unitFeatures: string[];
-  propertyFeatures: string[];
-  utilities: string[];
-  floorplans: Array<{
-    bedrooms: number;
-    bathrooms: number;
-    rentMin: number;
-    rentMax: number;
-    sqft: number | null;
+  title?: string;
+  slug?: string;
+  address?: string;
+  lat?: number;
+  lng?: number;
+  min_rent?: string;
+  max_rent?: string;
+  min_bed?: string;
+  max_bed?: string;
+  min_bath?: string;
+  max_bath?: string;
+  contact_number?: string;
+  phone?: string;
+  landlord_email?: string;
+  email?: string;
+  landlord_website?: string;
+  website?: string;
+  distance?: string;
+  images?: string[];
+  category_title?: string;
+  description?: string;
+  unitFeatures?: string[];
+  listingFeatures?: string[];
+  utilities?: string[];
+  pets_allowed?: string;
+  rent_style?: string;
+  per_person_property?: boolean;
+  parking_allowed?: boolean;
+  laundry_allowed?: boolean;
+  floorplans?: Array<{
+    bed?: string;
+    bath?: string;
+    min_rent?: string;
+    max_rent?: string;
+    sq_footage?: string;
   }>;
-  petsAllowed: boolean;
-  furnished: boolean;
-  hasParking: boolean;
-  hasPool: boolean;
-  hasGym: boolean;
-  hasLaundry: boolean;
-  detailUrl: string;
 }
 
-// Parse address components from full address string
+// ---------------------------------------------------------------------------
+// Neighborhood classification — config-driven instead of magic numbers
+// ---------------------------------------------------------------------------
+interface NeighborhoodRule {
+  name: string;
+  bounds: { latMin: number; latMax: number; lngMin: number; lngMax: number };
+  keywords: string[];
+}
+
+const NEIGHBORHOOD_RULES: NeighborhoodRule[] = [
+  {
+    name: "West Campus",
+    bounds: { latMin: 30.28, latMax: 30.295, lngMin: -97.755, lngMax: -97.735 },
+    keywords: ["west", "rio grande", "nueces", "pearl", "san antonio"],
+  },
+  {
+    name: "North Campus",
+    bounds: { latMin: 30.295, latMax: 30.315, lngMin: -97.75, lngMax: -97.72 },
+    keywords: ["speedway", "duval", "avenue"],
+  },
+  {
+    name: "Hyde Park",
+    bounds: { latMin: 30.3, latMax: 30.34, lngMin: -97.735, lngMax: -97.71 },
+    keywords: ["hyde park"],
+  },
+  {
+    name: "East Campus",
+    bounds: { latMin: 30.25, latMax: 30.32, lngMin: -97.72, lngMax: -97.68 },
+    keywords: [],
+  },
+  {
+    name: "Riverside",
+    bounds: { latMin: 30.22, latMax: 30.25, lngMin: -97.78, lngMax: -97.7 },
+    keywords: ["riverside"],
+  },
+  {
+    name: "Far Campus",
+    bounds: { latMin: 30.28, latMax: 30.35, lngMin: -97.8, lngMax: -97.76 },
+    keywords: ["far west"],
+  },
+];
+
+function determineNeighborhood(
+  address: string,
+  lat: number,
+  lng: number,
+): string {
+  for (const rule of NEIGHBORHOOD_RULES) {
+    const { latMin, latMax, lngMin, lngMax } = rule.bounds;
+    if (lat >= latMin && lat <= latMax && lng >= lngMin && lng <= lngMax) {
+      return rule.name;
+    }
+  }
+
+  const addr = address.toLowerCase();
+  for (const rule of NEIGHBORHOOD_RULES) {
+    if (rule.keywords.some((kw) => addr.includes(kw))) {
+      return rule.name;
+    }
+  }
+
+  return "Other";
+}
+
+// ---------------------------------------------------------------------------
+// Validation
+// ---------------------------------------------------------------------------
+interface ValidationResult {
+  valid: boolean;
+  reason?: string;
+}
+
+function validateRawListing(raw: unknown): ValidationResult {
+  if (typeof raw !== "object" || raw === null) {
+    return { valid: false, reason: "not an object" };
+  }
+
+  const r = raw as Record<string, unknown>;
+
+  if (typeof r.id !== "number") {
+    return { valid: false, reason: "missing or non-numeric id" };
+  }
+
+  if (typeof r.lat !== "number" || typeof r.lng !== "number") {
+    return { valid: false, reason: `listing ${r.id}: missing lat/lng` };
+  }
+
+  if (r.lat === 0 && r.lng === 0) {
+    return { valid: false, reason: `listing ${r.id}: lat/lng are both 0` };
+  }
+
+  if (typeof r.title !== "string" || r.title.trim().length === 0) {
+    return { valid: false, reason: `listing ${r.id}: missing title` };
+  }
+
+  return { valid: true };
+}
+
+// ---------------------------------------------------------------------------
+// Parsing helpers
+// ---------------------------------------------------------------------------
 function parseAddress(fullAddress: string): {
   address: string;
   city: string;
   state: string;
   zipCode: string;
 } {
-  // Format: "701 West 28th Street Austin, TX 78705 USA"
   const parts = fullAddress.replace(" USA", "").trim();
-
-  // Try to extract zip code
   const zipMatch = parts.match(/(\d{5})(?:-\d{4})?$/);
   const zipCode = zipMatch ? zipMatch[1] : "78705";
-
-  // Try to extract state
   const stateMatch = parts.match(/,?\s*([A-Z]{2})\s+\d{5}/);
   const state = stateMatch ? stateMatch[1] : "TX";
-
-  // Try to extract city
   const cityMatch = parts.match(/([A-Za-z\s]+),?\s*[A-Z]{2}\s+\d{5}/);
   const city = cityMatch ? cityMatch[1].trim() : "Austin";
-
-  // Street address is everything before the city
   const cityIndex = parts.indexOf(city);
   const address =
     cityIndex > 0
       ? parts.substring(0, cityIndex).trim().replace(/,\s*$/, "")
       : parts;
-
   return { address, city, state, zipCode };
 }
 
-// Parse walk time from distance string like "9 mins"
 function parseWalkTime(distance: string | null): number | null {
   if (!distance) return null;
   const match = distance.match(/(\d+)/);
   return match ? parseInt(match[1]) : null;
 }
 
-// Determine neighborhood based on address and coordinates
-function determineNeighborhood(
-  address: string,
-  lat: number,
-  lng: number,
-): string {
-  const addr = address.toLowerCase();
-
-  // West Campus: Generally west of Guadalupe, north of MLK
-  if (lat > 30.28 && lat < 30.295 && lng > -97.755 && lng < -97.735) {
-    return "West Campus";
-  }
-
-  // North Campus: North of 30th St
-  if (lat > 30.295 && lat < 30.315 && lng > -97.75 && lng < -97.72) {
-    return "North Campus";
-  }
-
-  // Hyde Park: Further north
-  if (lat > 30.3 && lng > -97.735 && lng < -97.71) {
-    return "Hyde Park";
-  }
-
-  // East Campus: East of I-35
-  if (lng > -97.72) {
-    return "East Campus";
-  }
-
-  // Riverside: South of the river
-  if (lat < 30.25) {
-    return "Riverside";
-  }
-
-  // Far West / Far Campus
-  if (lng < -97.76) {
-    return "Far Campus";
-  }
-
-  // Default based on address keywords
-  if (
-    addr.includes("west") ||
-    addr.includes("rio grande") ||
-    addr.includes("nueces") ||
-    addr.includes("pearl") ||
-    addr.includes("san antonio")
-  ) {
-    return "West Campus";
-  }
-  if (
-    addr.includes("speedway") ||
-    addr.includes("duval") ||
-    addr.includes("avenue")
-  ) {
-    return "North Campus";
-  }
-
-  return "Other";
-}
-
-// Decode base64 description
 function decodeDescription(encoded: string | null): string | null {
   if (!encoded) return null;
   try {
@@ -164,52 +195,45 @@ function decodeDescription(encoded: string | null): string | null {
   }
 }
 
-// Transform raw listing to our format
-function transformListing(raw: any): ScrapedApartment {
+// ---------------------------------------------------------------------------
+// Transform a validated raw listing
+// ---------------------------------------------------------------------------
+function transformListing(raw: RawListing): ScrapedApartment {
   const { address, city, state, zipCode } = parseAddress(raw.address || "");
 
-  // Get price from floorplans or direct fields
   let priceMin: number | null = null;
   let priceMax: number | null = null;
 
-  if (raw.min_rent) {
-    priceMin = parseFloat(raw.min_rent);
-  }
-  if (raw.max_rent) {
-    priceMax = parseFloat(raw.max_rent);
-  }
+  if (raw.min_rent) priceMin = parseFloat(raw.min_rent);
+  if (raw.max_rent) priceMax = parseFloat(raw.max_rent);
 
-  // If no direct prices, calculate from floorplans
-  if (!priceMin && raw.floorplans?.length > 0) {
+  if (!priceMin && raw.floorplans && raw.floorplans.length > 0) {
     const rents = raw.floorplans
-      .map((fp: any) => parseFloat(fp.min_rent))
-      .filter((r: number) => !isNaN(r) && r > 0);
+      .map((fp) => parseFloat(fp.min_rent ?? ""))
+      .filter((r) => !isNaN(r) && r > 0);
     if (rents.length > 0) {
       priceMin = Math.min(...rents);
       priceMax = Math.max(
         ...raw.floorplans
-          .map((fp: any) => parseFloat(fp.max_rent))
-          .filter((r: number) => !isNaN(r)),
+          .map((fp) => parseFloat(fp.max_rent ?? ""))
+          .filter((r) => !isNaN(r)),
       );
     }
   }
 
-  // Transform floorplans
-  const floorplans = (raw.floorplans || []).map((fp: any) => ({
-    bedrooms: parseInt(fp.bed) || 0,
-    bathrooms: parseInt(fp.bath) || 1,
-    rentMin: parseFloat(fp.min_rent) || 0,
-    rentMax: parseFloat(fp.max_rent) || 0,
+  const floorplans = (raw.floorplans || []).map((fp) => ({
+    bedrooms: parseInt(fp.bed ?? "0") || 0,
+    bathrooms: parseInt(fp.bath ?? "0") || 1,
+    rentMin: parseFloat(fp.min_rent ?? "0") || 0,
+    rentMax: parseFloat(fp.max_rent ?? "0") || 0,
     sqft: fp.sq_footage ? parseInt(fp.sq_footage) : null,
   }));
 
-  // Get image URLs
   const images = (raw.images || []).map(
     (img: string) =>
       `https://rcp-prod-uploads.s3.amazonaws.com/property_images/slider_images/${img}`,
   );
 
-  // Get all amenity strings
   const unitFeatures = Array.isArray(raw.unitFeatures) ? raw.unitFeatures : [];
   const propertyFeatures = Array.isArray(raw.listingFeatures)
     ? raw.listingFeatures
@@ -217,7 +241,6 @@ function transformListing(raw: any): ScrapedApartment {
   const utilities = Array.isArray(raw.utilities) ? raw.utilities : [];
   const allAmenities = [...unitFeatures, ...propertyFeatures, ...utilities];
 
-  // Detect features
   const amenityText = allAmenities.join(" ").toLowerCase();
   const petsAllowed =
     raw.pets_allowed === "All Pets" ||
@@ -249,19 +272,19 @@ function transformListing(raw: any): ScrapedApartment {
     priceMax,
     pricePerPerson:
       raw.rent_style === "person" || raw.per_person_property === true,
-    bedroomMin: parseInt(raw.min_bed) || 0,
-    bedroomMax: parseInt(raw.max_bed) || 0,
-    bathroomMin: parseInt(raw.min_bath) || 1,
-    bathroomMax: parseInt(raw.max_bath) || 1,
+    bedroomMin: parseInt(raw.min_bed ?? "0") || 0,
+    bedroomMax: parseInt(raw.max_bed ?? "0") || 0,
+    bathroomMin: parseInt(raw.min_bath ?? "0") || 1,
+    bathroomMax: parseInt(raw.max_bath ?? "0") || 1,
     phone: raw.contact_number || raw.phone || null,
     email: raw.landlord_email || raw.email || null,
     website: raw.landlord_website || raw.website || null,
-    walkTime: parseWalkTime(raw.distance),
+    walkTime: parseWalkTime(raw.distance ?? null),
     imageUrl: images[0] || null,
     images,
-    neighborhood: determineNeighborhood(address, raw.lat, raw.lng),
+    neighborhood: determineNeighborhood(address, raw.lat ?? 0, raw.lng ?? 0),
     category: raw.category_title || "Apartment",
-    description: decodeDescription(raw.description),
+    description: decodeDescription(raw.description ?? null),
     amenities: allAmenities,
     unitFeatures,
     propertyFeatures,
@@ -277,6 +300,80 @@ function transformListing(raw: any): ScrapedApartment {
   };
 }
 
+// ---------------------------------------------------------------------------
+// Retry helper
+// ---------------------------------------------------------------------------
+async function withRetry<T>(
+  fn: () => Promise<T>,
+  { retries = 3, baseDelay = 2000, label = "operation" } = {},
+): Promise<T> {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      if (attempt === retries) throw error;
+      const delay = baseDelay * Math.pow(2, attempt - 1);
+      console.log(
+        `   ⚠ ${label} failed (attempt ${attempt}/${retries}), retrying in ${delay}ms...`,
+      );
+      await new Promise((r) => setTimeout(r, delay));
+    }
+  }
+  throw new Error("unreachable");
+}
+
+// ---------------------------------------------------------------------------
+// Diff report
+// ---------------------------------------------------------------------------
+function printDiffReport(
+  prev: ScrapedApartment[],
+  next: ScrapedApartment[],
+) {
+  const prevMap = new Map(prev.map((a) => [a.id, a]));
+  const nextMap = new Map(next.map((a) => [a.id, a]));
+
+  const added = next.filter((a) => !prevMap.has(a.id));
+  const removed = prev.filter((a) => !nextMap.has(a.id));
+  const priceChanges: {
+    name: string;
+    oldPrice: number | null;
+    newPrice: number | null;
+  }[] = [];
+
+  for (const apt of next) {
+    const old = prevMap.get(apt.id);
+    if (old && old.priceMin !== apt.priceMin) {
+      priceChanges.push({
+        name: apt.name,
+        oldPrice: old.priceMin,
+        newPrice: apt.priceMin,
+      });
+    }
+  }
+
+  console.log("\n📋 Diff Report (vs. previous scrape):");
+  console.log(`   Added:   ${added.length} listing(s)`);
+  if (added.length > 0 && added.length <= 10) {
+    added.forEach((a) => console.log(`     + ${a.name}`));
+  }
+  console.log(`   Removed: ${removed.length} listing(s)`);
+  if (removed.length > 0 && removed.length <= 10) {
+    removed.forEach((a) => console.log(`     - ${a.name}`));
+  }
+  console.log(`   Price changes: ${priceChanges.length}`);
+  priceChanges.slice(0, 10).forEach((c) => {
+    const old = c.oldPrice ? `$${c.oldPrice}` : "N/A";
+    const nw = c.newPrice ? `$${c.newPrice}` : "N/A";
+    console.log(`     ~ ${c.name}: ${old} → ${nw}`);
+  });
+  if (priceChanges.length > 10) {
+    console.log(`     ... and ${priceChanges.length - 10} more`);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Main scraper
+// ---------------------------------------------------------------------------
 async function scrapeListings(): Promise<ScrapedApartment[]> {
   console.log("🚀 Starting UT Housing scraper...\n");
 
@@ -285,33 +382,60 @@ async function scrapeListings(): Promise<ScrapedApartment[]> {
 
   try {
     console.log("📡 Loading UT Housing page...");
-    await page.goto("https://housing.offcampus.utexas.edu/listing", {
-      waitUntil: "networkidle2",
-      timeout: 60000,
-    });
 
-    // Wait for the data to load
-    await new Promise((r) => setTimeout(r, 3000));
+    await withRetry(
+      () =>
+        page.goto("https://housing.offcampus.utexas.edu/listing", {
+          waitUntil: "networkidle2",
+          timeout: 60000,
+        }),
+      { label: "page load" },
+    );
 
-    console.log("📦 Extracting listingData from page...");
+    console.log("⏳ Waiting for listingData to appear on page...");
+    await page.waitForFunction(
+      () => typeof (window as unknown as Record<string, unknown>).listingData !== "undefined",
+      { timeout: 30000 },
+    );
 
-    // Extract the listingData global variable
+    console.log("📦 Extracting listingData...");
+
     const listingData = await page.evaluate(() => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return (window as any).listingData;
     });
 
     if (!listingData) {
-      throw new Error("listingData not found on page");
+      throw new Error("listingData was undefined after waitForFunction");
     }
 
-    // Convert to array and transform
-    const rawListings = Object.values(listingData) as any[];
-    console.log(`✅ Found ${rawListings.length} raw listings`);
+    const rawEntries = Object.values(listingData);
+    console.log(`✅ Found ${rawEntries.length} raw entries`);
 
-    // Transform all listings
-    const apartments = rawListings.map(transformListing);
+    let validationSkipped = 0;
+    const validRaw: RawListing[] = [];
+    for (const entry of rawEntries) {
+      const result = validateRawListing(entry);
+      if (result.valid) {
+        validRaw.push(entry as RawListing);
+      } else {
+        validationSkipped++;
+        if (validationSkipped <= 5) {
+          console.log(`   ⚠ Skipped invalid: ${result.reason}`);
+        }
+      }
+    }
 
-    // Filter out any with missing critical data
+    if (validationSkipped > 5) {
+      console.log(
+        `   ⚠ ... and ${validationSkipped - 5} more invalid entries`,
+      );
+    }
+    console.log(
+      `✅ ${validRaw.length} passed validation, ${validationSkipped} skipped`,
+    );
+
+    const apartments = validRaw.map(transformListing);
     const validApartments = apartments.filter(
       (apt) => apt.name && apt.latitude !== 0 && apt.longitude !== 0,
     );
@@ -329,40 +453,46 @@ async function scrapeListings(): Promise<ScrapedApartment[]> {
 
 async function main() {
   try {
+    const outputPath = path.join(__dirname, "scraped-apartments.json");
+
+    // Load previous data for diff if it exists
+    let previousData: ScrapedApartment[] | null = null;
+    if (fs.existsSync(outputPath)) {
+      try {
+        previousData = JSON.parse(fs.readFileSync(outputPath, "utf-8"));
+      } catch {
+        console.log("⚠ Could not parse previous scrape data, skipping diff");
+      }
+    }
+
     const apartments = await scrapeListings();
 
     // Save to JSON file
-    const outputPath = path.join(__dirname, "scraped-apartments.json");
     fs.writeFileSync(outputPath, JSON.stringify(apartments, null, 2));
-    console.log(`\n📁 Exported data to ${outputPath}`);
+    console.log(`\n📁 Exported ${apartments.length} apartments to ${outputPath}`);
 
-    // Print summary
+    // Diff report
+    if (previousData && previousData.length > 0) {
+      printDiffReport(previousData, apartments);
+    } else {
+      console.log("\n📋 No previous data found — skipping diff report");
+    }
+
+    // Summary
     const withPrices = apartments.filter((a) => a.priceMin !== null);
     const neighborhoods = [...new Set(apartments.map((a) => a.neighborhood))];
-    const categories = [...new Set(apartments.map((a) => a.category))];
 
     console.log("\n📊 Summary:");
     console.log(`   Total apartments: ${apartments.length}`);
     console.log(`   With prices: ${withPrices.length}`);
     console.log(`   Neighborhoods: ${neighborhoods.join(", ")}`);
-    console.log(`   Categories: ${categories.join(", ")}`);
 
-    // Print price range
     const prices = withPrices.map((a) => a.priceMin!).filter((p) => p > 0);
     if (prices.length > 0) {
       console.log(
         `   Price range: $${Math.min(...prices)} - $${Math.max(...withPrices.map((a) => a.priceMax || 0))}`,
       );
     }
-
-    // Print first 10 apartments
-    console.log("\n🏠 Sample apartments:");
-    apartments.slice(0, 10).forEach((apt, i) => {
-      const price = apt.priceMin
-        ? `$${apt.priceMin}${apt.priceMax && apt.priceMax !== apt.priceMin ? `-$${apt.priceMax}` : ""}`
-        : "Call for price";
-      console.log(`   ${i + 1}. ${apt.name} (${apt.neighborhood}) - ${price}`);
-    });
   } catch (error) {
     console.error("Failed to scrape:", error);
     process.exit(1);

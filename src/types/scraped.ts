@@ -1,0 +1,45 @@
+export interface ScrapedApartment {
+  id: number;
+  name: string;
+  slug: string;
+  address: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  latitude: number;
+  longitude: number;
+  priceMin: number | null;
+  priceMax: number | null;
+  pricePerPerson: boolean;
+  bedroomMin: number;
+  bedroomMax: number;
+  bathroomMin: number;
+  bathroomMax: number;
+  phone: string | null;
+  email: string | null;
+  website: string | null;
+  walkTime: number | null;
+  imageUrl: string | null;
+  images: string[];
+  neighborhood: string;
+  category: string;
+  description: string | null;
+  amenities: string[];
+  unitFeatures: string[];
+  propertyFeatures: string[];
+  utilities: string[];
+  floorplans: Array<{
+    bedrooms: number;
+    bathrooms: number;
+    rentMin: number;
+    rentMax: number;
+    sqft: number | null;
+  }>;
+  petsAllowed: boolean;
+  furnished: boolean;
+  hasParking: boolean;
+  hasPool: boolean;
+  hasGym: boolean;
+  hasLaundry: boolean;
+  detailUrl: string;
+}

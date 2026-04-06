@@ -1,7 +1,7 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   X,
@@ -12,11 +12,11 @@ import {
   Car,
   PawPrint,
   DollarSign,
-  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { formatPriceRange } from "@/lib/utils";
+import { useCompareList } from "@/hooks/use-compare-list";
+import type { LucideIcon } from "lucide-react";
 
 type CompareApartment = {
   id: string;
@@ -27,89 +27,91 @@ type CompareApartment = {
   walkTime: number | null;
   petFriendly: boolean;
   parkingType: string | null;
-  yearBuilt?: number | null;
+  yearBuilt: number | null;
   priceMin: number;
   priceMax: number | null;
+  priceRange: string;
   bedroomRange: string;
-  amenities?: string[];
+  amenities: string[];
 };
 
-export default function CompareContent() {
-  const searchParams = useSearchParams();
-  const ids = searchParams.get("ids")?.split(",") || [];
+type CompareRow = {
+  label: string;
+  icon: LucideIcon | null;
+  getValue: (apt: CompareApartment) => string;
+  highlight?: (apt: CompareApartment) => "green" | "red" | null;
+};
 
-  const [apartments, setApartments] = useState<CompareApartment[]>([]);
-  const [loading, setLoading] = useState(true);
+interface Props {
+  apartments: CompareApartment[];
+}
 
-  useEffect(() => {
-    async function fetchApartments() {
-      if (ids.length === 0) {
-        setLoading(false);
-        return;
-      }
+const compareRows: CompareRow[] = [
+  {
+    label: "Price Range",
+    icon: DollarSign,
+    getValue: (apt) => apt.priceRange,
+  },
+  {
+    label: "Neighborhood",
+    icon: MapPin,
+    getValue: (apt) => apt.neighborhood.name,
+  },
+  {
+    label: "Walk to Campus",
+    icon: Clock,
+    getValue: (apt) => (apt.walkTime ? `${apt.walkTime} min` : "N/A"),
+  },
+  {
+    label: "Bedrooms Available",
+    icon: Bed,
+    getValue: (apt) => apt.bedroomRange,
+  },
+  {
+    label: "Parking",
+    icon: Car,
+    getValue: (apt) => apt.parkingType || "N/A",
+  },
+  {
+    label: "Pet Friendly",
+    icon: PawPrint,
+    getValue: (apt) => (apt.petFriendly ? "Yes" : "No"),
+    highlight: (apt) => (apt.petFriendly ? "green" : "red"),
+  },
+  {
+    label: "Year Built",
+    icon: null,
+    getValue: (apt) => apt.yearBuilt?.toString() || "N/A",
+  },
+];
 
-      try {
-        const res = await fetch("/api/apartments");
-        const allApartments = await res.json();
+export default function CompareContent({ apartments: initial }: Props) {
+  const router = useRouter();
+  const { toggle } = useCompareList();
+  const [apartments, setApartments] = useState<CompareApartment[]>(initial);
 
-        const filtered = allApartments.filter((apt: CompareApartment) =>
-          ids.includes(apt.id),
-        );
-
-        const detailed = await Promise.all(
-          filtered.map(async (apt: CompareApartment) => {
-            try {
-              const detailRes = await fetch(`/api/apartments/${apt.slug}`);
-              const detail = await detailRes.json();
-              const amenityNames = Object.values(
-                detail.groupedAmenities || {},
-              ).flat() as { name: string }[];
-              return {
-                ...apt,
-                yearBuilt: detail.yearBuilt,
-                petFriendly: detail.petFriendly,
-                parkingType: detail.parkingType,
-                amenities: amenityNames.map((a) => a.name),
-              };
-            } catch {
-              return apt;
-            }
-          }),
-        );
-
-        setApartments(detailed);
-      } catch (error) {
-        console.error("Error fetching apartments:", error);
-      } finally {
-        setLoading(false);
-      }
+  function handleRemove(id: string) {
+    toggle(id); // sync localStorage + nav badge
+    const next = apartments.filter((a) => a.id !== id);
+    setApartments(next);
+    // Keep the URL in sync so a refresh doesn't reload the removed apartment
+    if (next.length > 0) {
+      router.replace(`/compare?ids=${next.map((a) => a.id).join(",")}`);
+    } else {
+      router.replace("/compare");
     }
-
-    fetchApartments();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin text-burnt-orange mx-auto mb-4" />
-          <p className="text-gray-500">Loading comparison...</p>
-        </div>
-      </div>
-    );
   }
 
   if (apartments.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-background">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <div className="text-center">
             <div className="text-6xl mb-4">📊</div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            <h1 className="text-2xl font-bold text-text-primary mb-2">
               No Apartments to Compare
             </h1>
-            <p className="text-gray-600 mb-8">
+            <p className="text-text-secondary mb-8">
               Add apartments to your compare list from the browse page
             </p>
             <Link href="/apartments">
@@ -122,58 +124,17 @@ export default function CompareContent() {
   }
 
   const allAmenities = [
-    ...new Set(apartments.flatMap((apt) => apt.amenities || [])),
+    ...new Set(apartments.flatMap((apt) => apt.amenities)),
   ].sort();
 
-  const compareRows = [
-    {
-      label: "Price Range",
-      icon: DollarSign,
-      getValue: (apt: CompareApartment) =>
-        formatPriceRange(apt.priceMin, apt.priceMax) + "/mo",
-    },
-    {
-      label: "Neighborhood",
-      icon: MapPin,
-      getValue: (apt: CompareApartment) => apt.neighborhood.name,
-    },
-    {
-      label: "Walk to Campus",
-      icon: Clock,
-      getValue: (apt: CompareApartment) =>
-        apt.walkTime ? `${apt.walkTime} min` : "N/A",
-    },
-    {
-      label: "Bedrooms Available",
-      icon: Bed,
-      getValue: (apt: CompareApartment) => apt.bedroomRange,
-    },
-    {
-      label: "Parking",
-      icon: Car,
-      getValue: (apt: CompareApartment) => apt.parkingType || "N/A",
-    },
-    {
-      label: "Pet Friendly",
-      icon: PawPrint,
-      getValue: (apt: CompareApartment) => (apt.petFriendly ? "Yes" : "No"),
-      highlight: (apt: CompareApartment) => (apt.petFriendly ? "green" : "red"),
-    },
-    {
-      label: "Year Built",
-      icon: null,
-      getValue: (apt: CompareApartment) => apt.yearBuilt?.toString() || "N/A",
-    },
-  ];
-
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">
+          <h1 className="text-3xl font-bold text-text-primary">
             Compare Apartments
           </h1>
-          <p className="text-gray-600 mt-2">
+          <p className="text-text-secondary mt-2">
             Comparing {apartments.length} apartment
             {apartments.length !== 1 ? "s" : ""}
           </p>
@@ -184,22 +145,30 @@ export default function CompareContent() {
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b bg-gray-50">
-                    <th className="text-left p-4 font-medium text-gray-600 min-w-50">
+                  <tr className="border-b border-border-base bg-surface-raised">
+                    <th className="text-left p-4 font-medium text-text-secondary min-w-50">
                       Property
                     </th>
                     {apartments.map((apt) => (
                       <th key={apt.id} className="p-4 min-w-50 max-w-62.5">
-                        <div className="text-center">
+                        <div className="text-center relative group">
                           <Link
                             href={`/apartments/${apt.slug}`}
-                            className="font-semibold text-gray-900 hover:text-burnt-orange"
+                            className="font-semibold text-text-primary hover:text-burnt-orange"
                           >
                             {apt.name}
                           </Link>
-                          <p className="text-sm text-gray-500 mt-1 truncate">
+                          <p className="text-sm text-text-muted mt-1 truncate">
                             {apt.address}
                           </p>
+                          <button
+                            onClick={() => handleRemove(apt.id)}
+                            title="Remove from comparison"
+                            className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-red-500 dark:text-red-400 px-2 py-1 rounded-md bg-red-50 dark:bg-red-950/30 hover:scale-105 active:scale-95 transition-transform"
+                          >
+                            <X className="h-3 w-3" />
+                            Remove
+                          </button>
                         </div>
                       </th>
                     ))}
@@ -208,23 +177,26 @@ export default function CompareContent() {
 
                 <tbody>
                   {compareRows.map((row) => (
-                    <tr key={row.label} className="border-b">
-                      <td className="p-4 font-medium text-gray-700">
+                    <tr key={row.label} className="border-b border-border-base">
+                      <td className="p-4 font-medium text-text-secondary">
                         <div className="flex items-center gap-2">
                           {row.icon && (
-                            <row.icon className="h-4 w-4 text-gray-400" />
+                            <row.icon className="h-4 w-4 text-text-muted" />
                           )}
                           {row.label}
                         </div>
                       </td>
                       {apartments.map((apt) => (
-                        <td key={apt.id} className="p-4 text-center">
+                        <td
+                          key={apt.id}
+                          className="p-4 text-center text-text-primary"
+                        >
                           <span
                             className={
                               row.highlight?.(apt) === "green"
-                                ? "text-green-600 font-medium"
+                                ? "text-green-600 dark:text-green-400 font-medium"
                                 : row.highlight?.(apt) === "red"
-                                  ? "text-red-500 font-medium"
+                                  ? "text-red-500 dark:text-red-400 font-medium"
                                   : ""
                             }
                           >
@@ -235,23 +207,23 @@ export default function CompareContent() {
                     </tr>
                   ))}
 
-                  <tr className="bg-gray-50">
+                  <tr className="bg-surface-raised">
                     <td
                       colSpan={apartments.length + 1}
-                      className="p-4 font-semibold text-gray-900"
+                      className="p-4 font-semibold text-text-primary"
                     >
                       Amenities
                     </td>
                   </tr>
                   {allAmenities.map((amenity) => (
-                    <tr key={amenity} className="border-b">
-                      <td className="p-4 text-gray-700">{amenity}</td>
+                    <tr key={amenity} className="border-b border-border-base">
+                      <td className="p-4 text-text-secondary">{amenity}</td>
                       {apartments.map((apt) => (
                         <td key={apt.id} className="p-4 text-center">
-                          {apt.amenities?.includes(amenity) ? (
-                            <Check className="h-5 w-5 text-green-500 mx-auto" />
+                          {apt.amenities.includes(amenity) ? (
+                            <Check className="h-5 w-5 text-green-500 dark:text-green-400 mx-auto" />
                           ) : (
-                            <X className="h-5 w-5 text-gray-300 mx-auto" />
+                            <X className="h-5 w-5 text-text-muted mx-auto" />
                           )}
                         </td>
                       ))}

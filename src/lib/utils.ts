@@ -38,3 +38,12 @@ export function getBathroomLabel(bathrooms: number): string {
   if (bathrooms === 1) return "1 Bath";
   return `${bathrooms} Baths`;
 }
+
+export function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}

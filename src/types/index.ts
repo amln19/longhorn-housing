@@ -25,6 +25,8 @@ export type ApartmentCard = {
   name: string;
   slug: string;
   address: string;
+  latitude: number;
+  longitude: number;
   neighborhood: { name: string; slug: string };
   imageUrl: string | null;
   walkTime: number | null;

@@ -1,24 +1,13 @@
-"use client";
-
 import Link from "next/link";
 import Image from "next/image";
 
 export function Footer() {
-  const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
-
   return (
-    <footer className="border-t border-gray-200 bg-gray-50">
+    <footer className="border-t border-border-base bg-surface-raised">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="flex flex-col md:flex-row md:justify-between gap-8">
-          {/* Brand - Left Side */}
           <div className="md:max-w-md">
-            <Link
-              href="/"
-              onClick={scrollToTop}
-              className="flex items-center gap-2.5 group"
-            >
+            <Link href="/" className="flex items-center gap-2.5 group">
               <Image
                 src="/lh-logo.png"
                 alt="Logo"
@@ -26,26 +15,24 @@ export function Footer() {
                 height={40}
                 className="h-22 w-auto"
               />
-              <span className="text-3xl font-bold text-gray-900">
+              <span className="text-3xl font-bold text-text-primary">
                 Longhorn<span className="text-burnt-orange">Housing</span>
               </span>
             </Link>
-            <p className="mt-4 text-sm text-gray-500">
+            <p className="mt-4 text-sm text-text-secondary">
               Your complete resource for off-campus housing near UT Austin.
-              Browse, compare, and discover your ideal apartment.
+              Browse, compare, find roommates, and discover subleases.
             </p>
           </div>
 
-          {/* Right Side - Quick Links and Resources */}
           <div className="flex flex-col sm:flex-row gap-8 md:gap-16">
-            {/* Quick Links */}
             <div>
-              <h3 className="font-semibold text-gray-900 mb-4">Quick Links</h3>
+              <h3 className="font-semibold text-text-primary mb-4">Explore</h3>
               <ul className="space-y-3">
                 <li>
                   <Link
                     href="/apartments"
-                    className="text-sm text-gray-500 hover:text-burnt-orange transition-colors"
+                    className="text-sm text-text-secondary hover:text-burnt-orange transition-colors"
                   >
                     Browse Apartments
                   </Link>
@@ -53,32 +40,73 @@ export function Footer() {
                 <li>
                   <Link
                     href="/map"
-                    className="text-sm text-gray-500 hover:text-burnt-orange transition-colors"
+                    className="text-sm text-text-secondary hover:text-burnt-orange transition-colors"
                   >
-                    Map View
+                    Map & Route Planner
                   </Link>
                 </li>
                 <li>
                   <Link
                     href="/compare"
-                    className="text-sm text-gray-500 hover:text-burnt-orange transition-colors"
+                    className="text-sm text-text-secondary hover:text-burnt-orange transition-colors"
                   >
                     Compare Apartments
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/subleases"
+                    className="text-sm text-text-secondary hover:text-burnt-orange transition-colors"
+                  >
+                    Subleases
                   </Link>
                 </li>
               </ul>
             </div>
 
-            {/* Resources */}
             <div>
-              <h3 className="font-semibold text-gray-900 mb-4">Resources</h3>
+              <h3 className="font-semibold text-text-primary mb-4">
+                Community
+              </h3>
+              <ul className="space-y-3">
+                <li>
+                  <Link
+                    href="/roommates"
+                    className="text-sm text-text-secondary hover:text-burnt-orange transition-colors"
+                  >
+                    Find Roommates
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/dashboard"
+                    className="text-sm text-text-secondary hover:text-burnt-orange transition-colors"
+                  >
+                    My Dashboard
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/auth/signup"
+                    className="text-sm text-text-secondary hover:text-burnt-orange transition-colors"
+                  >
+                    Create Account
+                  </Link>
+                </li>
+              </ul>
+            </div>
+
+            <div>
+              <h3 className="font-semibold text-text-primary mb-4">
+                Resources
+              </h3>
               <ul className="space-y-3">
                 <li>
                   <a
                     href="https://housing.utexas.edu/"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-sm text-gray-500 hover:text-burnt-orange transition-colors"
+                    className="text-sm text-text-secondary hover:text-burnt-orange transition-colors"
                   >
                     UT Housing
                   </a>
@@ -88,7 +116,7 @@ export function Footer() {
                     href="https://www.capmetro.org/"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-sm text-gray-500 hover:text-burnt-orange transition-colors"
+                    className="text-sm text-text-secondary hover:text-burnt-orange transition-colors"
                   >
                     CapMetro Transit
                   </a>
@@ -98,7 +126,7 @@ export function Footer() {
                     href="https://www.utexas.edu/maps"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-sm text-gray-500 hover:text-burnt-orange transition-colors"
+                    className="text-sm text-text-secondary hover:text-burnt-orange transition-colors"
                   >
                     UT Campus Map
                   </a>
@@ -108,9 +136,9 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="mt-12 pt-8 border-t border-gray-200">
-          <p className="text-center text-sm text-gray-400">
-            © {new Date().getFullYear()} LonghornHousing
+        <div className="mt-12 pt-8 border-t border-border-base">
+          <p className="text-center text-sm text-text-muted">
+            &copy; {new Date().getFullYear()} Longhorn Housing
             <br />
             <span className="text-xs">
               Not affiliated with The University of Texas at Austin.

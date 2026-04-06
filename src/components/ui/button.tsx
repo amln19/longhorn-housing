@@ -3,17 +3,18 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center whitespace-nowrap rounded-xl text-sm font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-burnt-orange focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 active:scale-[0.98]",
+  "inline-flex items-center justify-center whitespace-nowrap rounded-xl text-sm font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-burnt-orange focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50 active:scale-[0.98]",
   {
     variants: {
       variant: {
         default:
-          "bg-burnt-orange text-white hover:bg-burnt-orange/90 shadow-lg shadow-burnt-orange/20 hover:shadow-burnt-orange/30",
+          "bg-burnt-orange text-white hover:bg-burnt-orange/90 shadow-lg shadow-burnt-orange-glow hover:shadow-burnt-orange-glow",
         secondary:
-          "bg-gray-100 text-gray-900 hover:bg-gray-200 border border-gray-200",
+          "bg-surface-raised text-text-primary hover:bg-surface-inset border border-border-base",
         outline:
-          "border-2 border-gray-200 bg-white hover:bg-gray-50 hover:border-gray-300",
-        ghost: "hover:bg-gray-100 hover:text-gray-900",
+          "border-2 border-border-base bg-surface hover:bg-surface-raised hover:border-border-strong text-text-primary",
+        ghost:
+          "hover:bg-surface-raised hover:text-text-primary text-text-secondary",
         link: "text-burnt-orange underline-offset-4 hover:underline",
         destructive:
           "bg-red-500 text-white hover:bg-red-600 shadow-lg shadow-red-500/20",

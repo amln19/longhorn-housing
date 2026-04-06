@@ -6,6 +6,10 @@ import {
   GitCompare,
   Star,
   TrendingUp,
+  Users,
+  FileText,
+  Heart,
+  Navigation,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -14,7 +18,8 @@ const features = [
   {
     icon: Search,
     title: "Smart Search",
-    description: "Filter by price, bedrooms, amenities, and distance to campus",
+    description:
+      "Filter by price, bedrooms, amenities, and distance to campus",
   },
   {
     icon: GitCompare,
@@ -23,9 +28,28 @@ const features = [
       "Compare up to 4 apartments at once to find your perfect match",
   },
   {
-    icon: MapPin,
-    title: "Interactive Map",
-    description: "See all apartments on a map with walk times to campus",
+    icon: TrendingUp,
+    title: "Price Trends",
+    description:
+      "Track weekly price changes and see historical pricing data for every apartment",
+  },
+  {
+    icon: Navigation,
+    title: "Route Planner",
+    description:
+      "Search UT buildings and see walking routes from any apartment on the interactive map",
+  },
+  {
+    icon: Users,
+    title: "Roommate Matching",
+    description:
+      "Find compatible roommates based on budget, lifestyle, and neighborhood preferences",
+  },
+  {
+    icon: FileText,
+    title: "Sublease Marketplace",
+    description:
+      "Post or find subleases and lease transfers near campus",
   },
 ];
 
@@ -44,10 +68,11 @@ export default function HomePage() {
               <span className="text-white">Made Simple</span>
             </h1>
             <p className="mt-6 text-lg md:text-xl text-white/90 max-w-2xl">
-              Browse verified listings, compare amenities and prices, and find
-              your ideal apartment near The University of Texas at Austin.
+              Browse verified listings, compare amenities and prices, track
+              price trends, find roommates, and discover subleases near The
+              University of Texas at Austin.
             </p>
-            <div className="mt-10 flex flex-col sm:flex-row gap-6">
+            <div className="mt-10 flex flex-col sm:flex-row gap-4">
               <Link href="/apartments">
                 <Button
                   size="lg"
@@ -66,6 +91,15 @@ export default function HomePage() {
                   View Map
                 </Button>
               </Link>
+              <Link href="/subleases">
+                <Button
+                  size="lg"
+                  className="bg-transparent text-white border border-white/60 hover:bg-white/15 w-full sm:w-auto transition-all duration-200"
+                >
+                  <FileText className="mr-2 h-5 w-5" />
+                  Subleases
+                </Button>
+              </Link>
             </div>
           </div>
         </div>
@@ -73,7 +107,7 @@ export default function HomePage() {
         {/* Stats */}
         <div className="border-t border-white/20 bg-black/20">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div className="grid grid-cols-3 gap-8">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
               <div className="text-center">
                 <div className="text-3xl md:text-4xl font-bold text-white">
                   100+
@@ -88,6 +122,12 @@ export default function HomePage() {
               </div>
               <div className="text-center">
                 <div className="text-3xl md:text-4xl font-bold text-white">
+                  Weekly
+                </div>
+                <div className="text-white/90 text-sm">Price Updates</div>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl md:text-4xl font-bold text-white">
                   Free
                 </div>
                 <div className="text-white/90 text-sm">No Hidden Fees</div>
@@ -98,29 +138,29 @@ export default function HomePage() {
       </section>
 
       {/* Features */}
-      <section className="py-20 bg-gray-50">
+      <section className="py-20 bg-surface-raised">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900">
+            <h2 className="text-3xl font-bold text-text-primary">
               Everything You Need to Find Housing
             </h2>
-            <p className="mt-4 text-gray-600 max-w-2xl mx-auto">
-              We{"'"}ve built the tools to make your apartment search as easy as
-              possible
+            <p className="mt-4 text-text-secondary max-w-2xl mx-auto">
+              We&apos;ve built the tools to make your apartment search as easy
+              as possible
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {features.map((feature) => (
               <Card key={feature.title} className="border-0 shadow-lg">
                 <CardContent className="p-8">
                   <div className="w-12 h-12 rounded-xl bg-burnt-orange/10 flex items-center justify-center mb-6">
                     <feature.icon className="h-6 w-6 text-burnt-orange" />
                   </div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                  <h3 className="text-xl font-semibold text-text-primary mb-2">
                     {feature.title}
                   </h3>
-                  <p className="text-gray-600">{feature.description}</p>
+                  <p className="text-text-secondary">{feature.description}</p>
                 </CardContent>
               </Card>
             ))}
@@ -129,11 +169,11 @@ export default function HomePage() {
       </section>
 
       {/* How It Works */}
-      <section className="py-20 bg-white">
+      <section className="py-20 bg-surface">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-gray-900">How It Works</h2>
-            <p className="mt-4 text-gray-600 max-w-2xl mx-auto">
+            <h2 className="text-3xl font-bold text-text-primary">How It Works</h2>
+            <p className="mt-4 text-text-secondary max-w-2xl mx-auto">
               Find your next home in three simple steps
             </p>
           </div>
@@ -151,10 +191,10 @@ export default function HomePage() {
                 <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-burnt-orange/10 text-burnt-orange font-bold text-sm mb-4">
                   1
                 </span>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                <h3 className="text-xl font-semibold text-text-primary mb-2">
                   Search & Filter
                 </h3>
-                <p className="text-gray-600">
+                <p className="text-text-secondary">
                   Use our powerful filters to narrow down apartments by price,
                   bedrooms, amenities, and distance to campus.
                 </p>
@@ -164,7 +204,7 @@ export default function HomePage() {
             <div className="relative">
               <div className="flex flex-col items-center text-center">
                 <div className="w-16 h-16 rounded-2xl bg-burnt-orange flex items-center justify-center mb-6 shadow-lg shadow-burnt-orange/30">
-                  <GitCompare className="h-8 w-8 text-white" />
+                  <Heart className="h-8 w-8 text-white" />
                 </div>
                 <div
                   className="absolute top-8 left-1/2 w-full h-0.5 bg-linear-to-r from-burnt-orange/30 via-burnt-orange/30 to-transparent hidden md:block"
@@ -173,12 +213,12 @@ export default function HomePage() {
                 <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-burnt-orange/10 text-burnt-orange font-bold text-sm mb-4">
                   2
                 </span>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                  Compare Options
+                <h3 className="text-xl font-semibold text-text-primary mb-2">
+                  Save & Compare
                 </h3>
-                <p className="text-gray-600">
-                  Add your favorites to compare and see them side-by-side. Make
-                  informed decisions with all the details.
+                <p className="text-text-secondary">
+                  Save your favorites, compare side-by-side, and track price
+                  trends to make informed decisions.
                 </p>
               </div>
             </div>
@@ -191,12 +231,12 @@ export default function HomePage() {
                 <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-burnt-orange/10 text-burnt-orange font-bold text-sm mb-4">
                   3
                 </span>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                <h3 className="text-xl font-semibold text-text-primary mb-2">
                   Find Your Home
                 </h3>
-                <p className="text-gray-600">
-                  Contact properties directly through their website. We provide
-                  all the info you need to get started.
+                <p className="text-text-secondary">
+                  Contact properties directly, find roommates, or discover
+                  subleases — all in one place.
                 </p>
               </div>
             </div>
@@ -214,53 +254,53 @@ export default function HomePage() {
       </section>
 
       {/* Why Choose Us */}
-      <section className="py-20 bg-linear-to-br from-gray-50 to-gray-100">
+      <section className="py-20 bg-surface-raised">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div>
-              <h2 className="text-3xl font-bold text-gray-900 mb-6">
+              <h2 className="text-3xl font-bold text-text-primary mb-6">
                 Why Students Choose Us
               </h2>
               <div className="space-y-6">
                 <div className="flex gap-4">
-                  <div className="shrink-0 w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center">
-                    <TrendingUp className="h-6 w-6 text-green-600" />
+                  <div className="shrink-0 w-12 h-12 rounded-xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                    <TrendingUp className="h-6 w-6 text-green-600 dark:text-green-400" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-gray-900 mb-1">
-                      Up-to-Date Listings
+                    <h3 className="font-semibold text-text-primary mb-1">
+                      Price Tracking
                     </h3>
-                    <p className="text-gray-600 text-sm">
-                      We regularly update our database to ensure accurate
-                      pricing and availability information.
+                    <p className="text-text-secondary text-sm">
+                      Weekly price snapshots let you see exactly how prices
+                      change over time for every apartment.
                     </p>
                   </div>
                 </div>
                 <div className="flex gap-4">
-                  <div className="shrink-0 w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center">
-                    <MapPin className="h-6 w-6 text-blue-600" />
+                  <div className="shrink-0 w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                    <Users className="h-6 w-6 text-blue-600 dark:text-blue-400" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-gray-900 mb-1">
-                      Walk Time to Campus
+                    <h3 className="font-semibold text-text-primary mb-1">
+                      Roommate Matching
                     </h3>
-                    <p className="text-gray-600 text-sm">
-                      Every listing includes estimated walk, bike, and bus times
-                      to UT Austin.
+                    <p className="text-text-secondary text-sm">
+                      Our compatibility algorithm matches you with roommates
+                      based on lifestyle, budget, and neighborhood preferences.
                     </p>
                   </div>
                 </div>
                 <div className="flex gap-4">
-                  <div className="shrink-0 w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center">
-                    <GitCompare className="h-6 w-6 text-purple-600" />
+                  <div className="shrink-0 w-12 h-12 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                    <Navigation className="h-6 w-6 text-purple-600 dark:text-purple-400" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-gray-900 mb-1">
-                      Easy Comparison
+                    <h3 className="font-semibold text-text-primary mb-1">
+                      Route Planning
                     </h3>
-                    <p className="text-gray-600 text-sm">
-                      Compare up to 4 apartments side-by-side to find your
-                      perfect match.
+                    <p className="text-text-secondary text-sm">
+                      Search any UT building and instantly see walking routes
+                      and times from apartments on the map.
                     </p>
                   </div>
                 </div>
@@ -295,9 +335,9 @@ export default function HomePage() {
           </h2>
           <p className="text-gray-400 max-w-2xl mx-auto mb-10 text-lg">
             Start exploring apartments near UT Austin today. Filter by your
-            preferences and compare your top choices.
+            preferences, compare your top choices, and find the perfect roommate.
           </p>
-          <div className="flex flex-col sm:flex-row gap-6 justify-center">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/apartments">
               <Button
                 size="lg"
@@ -305,6 +345,15 @@ export default function HomePage() {
               >
                 Start Searching
                 <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
+            </Link>
+            <Link href="/roommates">
+              <Button
+                size="lg"
+                className="bg-transparent text-white border border-white/40 hover:bg-white/15 hover:border-white/60 transition-all duration-200"
+              >
+                <Users className="mr-2 h-5 w-5" />
+                Find Roommates
               </Button>
             </Link>
             <Link href="/map">

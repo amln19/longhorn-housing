@@ -95,7 +95,7 @@ export function SearchFiltersComponent({
       {/* Main search bar */}
       <form onSubmit={handleSearchSubmit} className="flex gap-3">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted" />
           <Input
             placeholder="Search by apartment name or address..."
             className="pl-10 pr-10"
@@ -106,7 +106,7 @@ export function SearchFiltersComponent({
             <button
               type="button"
               onClick={() => handleSearch("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary"
             >
               <X className="h-4 w-4" />
             </button>
@@ -130,9 +130,9 @@ export function SearchFiltersComponent({
 
       {/* Expanded filters */}
       {showFilters && (
-        <div className="bg-white border-2 border-gray-100 rounded-2xl p-6 space-y-6 shadow-lg">
-          <div className="flex items-center justify-between pb-4 border-b border-gray-100">
-            <h3 className="font-bold text-lg text-gray-900">Filters</h3>
+        <div className="bg-surface border-2 border-border-base rounded-2xl p-6 space-y-6 shadow-lg">
+          <div className="flex items-center justify-between pb-4 border-b border-border-base">
+            <h3 className="font-bold text-lg text-text-primary">Filters</h3>
             {hasActiveFilters && (
               <button
                 onClick={clearFilters}
@@ -146,7 +146,7 @@ export function SearchFiltersComponent({
 
           {/* Neighborhood */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <label className="block text-sm font-semibold text-text-secondary mb-2">
               Neighborhood
             </label>
             <Select
@@ -164,7 +164,7 @@ export function SearchFiltersComponent({
           {/* Price Range */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
+              <label className="block text-sm font-semibold text-text-secondary mb-2">
                 Min Price
               </label>
               <Select
@@ -180,7 +180,7 @@ export function SearchFiltersComponent({
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-text-secondary mb-2">
                 Max Price
               </label>
               <Select
@@ -199,7 +199,7 @@ export function SearchFiltersComponent({
 
           {/* Bedrooms */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">
+            <label className="block text-sm font-medium text-text-secondary mb-3">
               Bedrooms
             </label>
             <div className="flex flex-wrap gap-2">
@@ -225,7 +225,7 @@ export function SearchFiltersComponent({
                       "px-4 py-2 rounded-lg text-sm font-medium border transition-colors",
                       isSelected
                         ? "bg-burnt-orange text-white border-burnt-orange"
-                        : "bg-white text-gray-600 border-gray-300 hover:border-burnt-orange",
+                        : "bg-surface text-text-secondary border-border-strong hover:border-burnt-orange",
                     )}
                   >
                     {option.label}
@@ -256,14 +256,14 @@ export function SearchFiltersComponent({
           {/* Amenities */}
           {Object.keys(groupedAmenities).length > 0 && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
+              <label className="block text-sm font-medium text-text-secondary mb-3">
                 Amenities
               </label>
               <div className="space-y-4">
                 {Object.entries(groupedAmenities).map(
                   ([category, categoryAmenities]) => (
                     <div key={category}>
-                      <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">
+                      <h4 className="text-xs font-semibold text-text-muted uppercase mb-2">
                         {category}
                       </h4>
                       <div className="flex flex-wrap gap-2">
@@ -290,7 +290,7 @@ export function SearchFiltersComponent({
                                 "px-3 py-1.5 rounded-full text-xs font-medium border transition-colors",
                                 isSelected
                                   ? "bg-burnt-orange text-white border-burnt-orange"
-                                  : "bg-white text-gray-600 border-gray-300 hover:border-burnt-orange",
+                                  : "bg-surface text-text-secondary border-border-strong hover:border-burnt-orange",
                               )}
                             >
                               {amenity.name}

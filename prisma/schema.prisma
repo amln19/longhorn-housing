@@ -16,6 +16,7 @@ model Neighborhood {
   slug        String      @unique
   description String?
   apartments  Apartment[]
+  subleases   Sublease[]
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 }
@@ -41,8 +42,6 @@ model Apartment {
   
   // Walk time to campus in minutes
   walkTime        Int?
-  bikeTime        Int?
-  busTime         Int?
   
   // Property details
   yearBuilt       Int?
@@ -52,17 +51,26 @@ model Apartment {
   
   description     String?
   imageUrl        String?
+
+  // Denormalized from FloorPlans for DB-level sort/filter
+  sourceId        Int?         @unique
+  minPrice        Int?
+  maxPrice        Int?
   
   // Relations
   floorPlans      FloorPlan[]
   amenities       ApartmentAmenity[]
   images          ApartmentImage[]
+  priceSnapshots  PriceSnapshot[]
+  favoritedBy     FavoriteApartment[]
   
   featured        Boolean      @default(false)
   available       Boolean      @default(true)
   
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
+
+  @@index([neighborhoodId])
 }
 
 // Floor plans for each apartment
@@ -85,6 +93,7 @@ model FloorPlan {
   availableNow  Boolean   @default(false)
   
   imageUrl      String?
+  priceSnapshots PriceSnapshot[]
   
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -120,4 +129,107 @@ model ApartmentImage {
   isPrimary   Boolean   @default(false)
   order       Int       @default(0)
   createdAt   DateTime  @default(now())
+}
+
+// Weekly price snapshots for historical trend tracking
+model PriceSnapshot {
+  id          String    @id @default(cuid())
+  apartmentId String
+  apartment   Apartment @relation(fields: [apartmentId], references: [id], onDelete: Cascade)
+  floorPlanId String
+  floorPlan   FloorPlan @relation(fields: [floorPlanId], references: [id], onDelete: Cascade)
+  priceMin    Int
+  priceMax    Int?
+  recordedAt  DateTime  @default(now())
+
+  @@index([apartmentId, recordedAt])
+  @@index([floorPlanId, recordedAt])
+}
+
+// User accounts linked to Supabase Auth
+model User {
+  id              String              @id @default(cuid())
+  supabaseId      String              @unique
+  email           String              @unique
+  name            String?
+  avatarUrl       String?
+  favorites       FavoriteApartment[]
+  roommateProfile RoommateProfile?
+  subleases       Sublease[]
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+}
+
+model FavoriteApartment {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  apartmentId String
+  apartment   Apartment @relation(fields: [apartmentId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+
+  @@unique([userId, apartmentId])
+}
+
+model RoommateProfile {
+  id                     String   @id @default(cuid())
+  userId                 String   @unique
+  user                   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name                   String
+  age                    Int?
+  gender                 String?
+  major                  String?
+  gradYear               Int?
+  bio                    String?
+  budgetMin              Int?
+  budgetMax              Int?
+  moveInDate             DateTime?
+  preferredNeighborhoods String[]
+  sleepSchedule          String?
+  noiseLevel             String?
+  cleanliness            String?
+  guests                 String?
+  smoking                Boolean  @default(false)
+  pets                   Boolean  @default(false)
+  active                 Boolean  @default(true)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  @@index([active])
+}
+
+model Sublease {
+  id                String        @id @default(cuid())
+  userId            String
+  user              User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title             String
+  description       String
+  apartmentName     String
+  address           String
+  latitude          Float?
+  longitude         Float?
+  neighborhoodId    String?
+  neighborhood      Neighborhood? @relation(fields: [neighborhoodId], references: [id])
+  bedrooms          Int
+  bathrooms         Float
+  sqft              Int?
+  monthlyRent       Int
+  deposit           Int?
+  leaseStart        DateTime
+  leaseEnd          DateTime
+  availableDate     DateTime
+  furnished         Boolean       @default(false)
+  utilitiesIncluded Boolean       @default(false)
+  parkingIncluded   Boolean       @default(false)
+  petFriendly       Boolean       @default(false)
+  imageUrls         String[]
+  contactEmail      String?
+  contactPhone      String?
+  status            String        @default("active")
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  @@index([neighborhoodId])
+  @@index([status])
+  @@index([userId, status])
 }
